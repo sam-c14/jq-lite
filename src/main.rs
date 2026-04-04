@@ -6,21 +6,21 @@ use std::error::Error;
 fn main() {
     let args: Vec<String> = env::args().collect();
     
-    let user_query: &String = &args[1];
+    let user_query: &str = &args[1];
 
-    let file_path: &String = &args[2];
+    let file_path: &str = &args[2];
 
     parse_json_file(file_path, user_query).expect("Failed to parse JSON data");
 
     println!("Rust Application Started");
 }
 
-fn get_file(file_path: &String) -> Result<String, Box<dyn Error>> {
+fn get_file(file_path: &str) -> Result<String, Box<dyn Error>> {
     let json: String = fs::read_to_string(file_path)?;
     Ok(json)
 }
 
-fn parse_json_file(file_path: &String, user_query: &String) -> SerdeJsonResult<()> {
+fn parse_json_file(file_path: &str, user_query: &str) -> SerdeJsonResult<()> {
     let mut file = String::new();
 
      match get_file(file_path) {
@@ -39,13 +39,30 @@ fn parse_json_file(file_path: &String, user_query: &String) -> SerdeJsonResult<(
     // Parse the string of data into serde_json::Value.
     let v: Value = serde_json::from_str(&file)?;
 
-    for query in query_array {
-        if v[query].is_null() {
-            println!("Query '{}' not found in JSON data.", query);   
+    for query in query_array { 
+        if query.contains(".") {
+            let nested_query = parse_nested_json(query);
+            let result = v.pointer(&nested_query);
+            match result {
+                Some(value) => println!("Result for query '{}': {}", query, value),
+                None => println!("No result found for query '{}'", query),
+            }
         } else {
-            println!("Query '{}' gave {}", query, v[query]);
+            let result = v.get(query);
+            match result {
+                Some(value) => println!("Result for query '{}': {}", query, value),
+                None => println!("No result found for query '{}'", query),
+            }
         }
     }
 
     Ok(())
+}
+
+fn parse_nested_json(query: &str) -> String {
+    let queries: Vec<&str> = query.split(".").collect();
+
+    let joint_query: String = String::from("/") + &queries.join("/");
+
+    joint_query
 }

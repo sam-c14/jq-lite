@@ -1,16 +1,28 @@
+pub mod help_utils;
 pub mod parse_utils;
 
-use parse_utils::{is_missing_query, has_only_json_query, is_missing_file_path, FILE_PATH, USER_QUERY, get_file, get_json_data, read_stdin};
+use help_utils::{print_help, print_error, HELP_COMMAND_LONG, HELP_COMMAND_SHORT};
+use parse_utils::{
+    FILE_PATH, USER_QUERY, get_file, get_json_data, has_only_json_query, is_missing_file_path,
+    is_missing_query, read_stdin,
+};
 use serde_json::Result as SerdeJsonResult;
 use std::env;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
 
+    let h1= String::from(HELP_COMMAND_LONG);
+    let h2 = String::from(HELP_COMMAND_SHORT);
+
+    if args.len() > 1 && (args.contains(&h1) || args.contains(&h2)) {
+        print_help();
+        std::process::exit(0);
+    }
+
     if is_missing_query(&args) {
-        eprintln!("Error:User query is required");
-        print_usage();
-        return;
+        print_error("User query is required");
+        std::process::exit(1);
     }
 
     let user_query: &str = &args[USER_QUERY];
@@ -21,8 +33,7 @@ fn main() {
         parse_json_file("", user_query, &user_input).expect("Failed to parse JSON data");
     } else {
         if is_missing_file_path(&args) {
-            eprintln!("Error: Missing query argument");
-            print_usage();
+            print_error("Missing query argument");
             std::process::exit(1);
         }
 
@@ -53,15 +64,4 @@ fn parse_json_file(file_path: &str, user_query: &str, processed_file: &str) -> S
     get_json_data(user_query, file).expect("Failed to get JSON data");
 
     Ok(())
-}
-
-fn print_usage() {
-    println!("Usage:");
-    println!("  jq-lite <query> <file-path>");
-    println!("  cat file.json | jq-lite <query>");
-    println!("  curl https://example.com/data.json | jq-lite <query>");
-    println!();
-    println!("Examples:");
-    println!("  jq-lite \"name\" data.json");
-    println!("  jq-lite \"user.name\" data.json");
 }

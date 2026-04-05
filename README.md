@@ -78,13 +78,12 @@ user.name → /user/name
     - Handle missing arguments
     - Show usage instructions
     - Prevent panics on missing inputs
-
-## 🧭 Roadmap (GitHub Issues)
-
+    
 4. **Add `--help `flag**
 
     Display usage, examples, and available options
 
+## 🧭 Roadmap (GitHub Issues)
 
 ## 🟡 Query Engine Improvements
 

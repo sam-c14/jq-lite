@@ -33,7 +33,7 @@ fn main() {
         parse_json_file("", user_query, &user_input).expect("Failed to parse JSON data");
     } else {
         if is_missing_file_path(&args) {
-            print_error("Missing query argument");
+            print_error("Missing File Path argument");
             std::process::exit(1);
         }
 

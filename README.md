@@ -73,19 +73,18 @@ user.name → /user/name
     ```bash
     jq-lite "name" '{"name":"John"}'
     ```
-
-## 🧭 Roadmap (GitHub Issues)
-
-### 🟢 Core CLI Improvements
 3. **Improve CLI argument validation**
 
     - Handle missing arguments
     - Show usage instructions
     - Prevent panics on missing inputs
 
+## 🧭 Roadmap (GitHub Issues)
+
 4. **Add `--help `flag**
 
     Display usage, examples, and available options
+
 
 ## 🟡 Query Engine Improvements
 

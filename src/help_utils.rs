@@ -9,8 +9,7 @@ pub fn print_help() {
     println!("  cat file.json | jq-lite <query>");
     println!("  curl https://example.com/data.json | jq-lite <query>");
     println!(
-        "  echo '{:}' | jq-lite <query>",
-        "{\"name\": \"Alice\", \"user\": {\"email\": \"alice@example.com\"}}"
+        "  echo '{{\"name\": \"Alice\", \"user\": {{\"email\": \"alice@example.com\"}}}}'  | jq-lite <query>"
     );
     println!();
     println!("Options:");

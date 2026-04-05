@@ -11,15 +11,15 @@ const ONLY_DIRECTORY_PATH: usize = 1;
 
 const HAS_FILE_PATH_AND_QUERY: usize = 3;
 
-pub fn has_only_json_query(args: &Vec<String>) -> bool {
+pub fn has_only_json_query(args: &[String]) -> bool {
     args.len() == (USER_QUERY + ONLY_DIRECTORY_PATH) && !io::stdin().is_terminal()
 }
 
-pub fn is_missing_query(args: &Vec<String>) -> bool {
+pub fn is_missing_query(args: &[String]) -> bool {
     args.len() == ONLY_DIRECTORY_PATH
 }
 
-pub fn is_missing_file_path(args: &Vec<String>) -> bool {
+pub fn is_missing_file_path(args: &[String]) -> bool {
     args.len() < HAS_FILE_PATH_AND_QUERY
 }
 

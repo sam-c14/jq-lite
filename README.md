@@ -58,9 +58,8 @@ user.name → /user/name
 - ❌ No support for pipes or filters
 - ❌ Not streaming (loads full JSON into memory)
 
-## 🧭 Roadmap (GitHub Issues)
+## Recent Addons
 
-### 🟢 Core CLI Improvements
 1. **Add stdin support for JSON input**
 
     Allow piping JSON into jq-lite:
@@ -75,6 +74,9 @@ user.name → /user/name
     jq-lite "name" '{"name":"John"}'
     ```
 
+## 🧭 Roadmap (GitHub Issues)
+
+### 🟢 Core CLI Improvements
 3. **Improve CLI argument validation**
 
     - Handle missing arguments

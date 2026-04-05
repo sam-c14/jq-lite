@@ -46,7 +46,7 @@ fn main() {
 fn parse_json_file(file_path: &str, user_query: &str, processed_file: &str) -> SerdeJsonResult<()> {
     let mut file = String::new();
 
-    if processed_file.len() > 0 {
+    if !processed_file.is_empty() {
         file.push_str(processed_file);
     } else {
         match get_file(file_path) {

@@ -83,10 +83,6 @@ user.name → /user/name
 
     Display usage, examples, and available options
 
-## 🧭 Roadmap (GitHub Issues)
-
-## 🟡 Query Engine Improvements
-
 5. **Support array indexing in queries**
     ```bash
     jq-lite "users[0].name" data.json
@@ -107,6 +103,8 @@ user.name → /user/name
 8. **Validate query syntax before execution**
 
     Return meaningful errors for invalid queries
+
+## 🧭 Roadmap (GitHub Issues)
 
 ## 🔵 Output & Formatting
 

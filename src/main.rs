@@ -22,7 +22,7 @@ fn main() {
 
     if is_missing_query(&args) {
         print_error("User query is required");
-        std::process::exit(1);
+        std::process::exit(2);
     }
 
     let user_query: &str = &args[USER_QUERY];
@@ -34,7 +34,7 @@ fn main() {
     } else {
         if is_missing_file_path(&args) {
             print_error("Missing File Path argument");
-            std::process::exit(1);
+            std::process::exit(2);
         }
 
         let file_path: &str = &args[FILE_PATH];

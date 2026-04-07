@@ -11,9 +11,10 @@ const ONLY_DIRECTORY_PATH: usize = 1;
 
 const HAS_FILE_PATH_AND_QUERY: usize = 3;
 
+#[derive(Debug)]
 enum Token {
     Field(String),
-    Wildcard,   // []
+    Wildcard,     // []
     Index(usize), // [1]
 }
 
@@ -57,17 +58,15 @@ pub fn read_stdin() -> Result<String, io::Error> {
 }
 
 pub fn get_json_data(user_query: &str, file: String) -> Result<(), Box<dyn Error>> {
-    let query_array: Vec<&str> = user_query.split_whitespace().collect();
-
-    // Parse the string of data into serde_json::Value.
     let v: Value = serde_json::from_str(&file)?;
 
-    let has_wildcards: bool = user_query.contains("[]");
+    let tokens = tokenize(user_query);
+    let results = execute_query(&tokens, &v);
 
-    if has_wildcards {
-        parse_query_with_wildcards(user_query, &v);
-    } else {
-        parse_query_without_wildcards(&v, query_array);
+    println!("Results for query '{}':\n", user_query);
+
+    for result in results {
+        println!("{}", result);
     }
 
     Ok(())
@@ -79,67 +78,96 @@ fn parse_arrays(query: &str) -> String {
     parsed
 }
 
-fn parse_query_without_wildcards(file_string: &Value, query_array: Vec<&str>) {
-    for query in query_array {
-        // Hanlde nested queries using dot notation
-        if query.contains(".") {
-            let nested_query = parse_nested_json(query);
+fn tokenize(query: &str) -> Vec<Token> {
+    let mut tokens = Vec::new();
+    let mut buffer = String::new();
+    let mut chars = query.chars().peekable();
 
-            let result = file_string.pointer("/user/address/city");
-
-            print_results(&result, nested_query.as_str());
-        } else if query.contains("]") && query.contains("[") {
-            let array_query = String::from("/") + &parse_arrays(query);
-
-            let result = file_string.pointer(array_query.as_str());
-
-            print_results(&result, query);
-        } else {
-            let result = file_string.get(query);
-
-            print_results(&result, query);
-        }
-    }
-}
-
-fn parse_query_with_wildcards(query: &str, file_string: &Value) {
-    // Check if empty brackets exists between the string
-    // ["user.address", ".city[1].block", ""]
-
-    let first_wildcard_index = query.find("]");
-
-    let has_single_wildcard_at_end = first_wildcard_index.unwrap() + 1 >= query.len();
-
-    if has_single_wildcard_at_end {
-        let joint_query = parse_nested_json(&query.replace("[", "]"));
-
-        let result = file_string.pointer(&joint_query).unwrap();
-
-        print_results(&Some(result), query);
-    } else {
-        let wildcard_queries: Vec<&str> = query.split("[]").collect();
-
-        print!("Wildcard queries: {:?}\n", wildcard_queries);
-
-        let mut result: &Value = file_string;
-
-        for wildcard_query in wildcard_queries {
-            let joint_query = parse_nested_json(wildcard_query);
-
-            if wildcard_query.trim().is_empty() {
-                continue;
+    while let Some(ch) = chars.next() {
+        match ch {
+            '.' => {
+                // End of a field
+                if !buffer.is_empty() {
+                    tokens.push(Token::Field(buffer.clone()));
+                    buffer.clear();
+                }
             }
 
-            result = result.pointer(&joint_query).expect(format!("Parsing Failed {joint_query} {result}").as_str());
-        }
+            '[' => {
+                // Flush any field before [
+                if !buffer.is_empty() {
+                    tokens.push(Token::Field(buffer.clone()));
+                    buffer.clear();
+                }
 
-        print_results(&Some(result), query);
+                // Look ahead
+                if let Some(']') = chars.peek() {
+                    // This is []
+                    chars.next(); // consume ]
+                    tokens.push(Token::Wildcard);
+                } else {
+                    // This is [index]
+                    let mut number = String::new();
+
+                    while let Some(c) = chars.next() {
+                        if c == ']' {
+                            break;
+                        }
+                        number.push(c);
+                    }
+
+                    let index = number.parse::<usize>().expect("Invalid array index");
+
+                    tokens.push(Token::Index(index));
+                }
+            }
+
+            _ => {
+                buffer.push(ch);
+            }
+        }
     }
+
+    // Flush remaining buffer
+    if !buffer.is_empty() {
+        tokens.push(Token::Field(buffer));
+    }
+
+    tokens
 }
 
-fn print_results(result: &Option<&Value>, query: &str) {
-    match result {
-        Some(value) => println!("Result for query '{}': {}", query, value),
-        None => println!("No result found for query '{}'", query),
+fn execute_query<'a>(tokens: &'a Vec<Token>, root: &'a Value) -> Vec<&'a Value> {
+    let mut current: Vec<&Value> = vec![root];
+
+    for token in tokens {
+        let mut next = Vec::new();
+
+        for value in current {
+            match token {
+                Token::Field(key) => {
+                    if let Some(v) = value.get(key) {
+                        next.push(v);
+                    }
+                }
+                Token::Wildcard => {
+                    if let Some(arr) = value.as_array() {
+                        for item in arr {
+                            next.push(item);
+                        }
+                    }
+                }
+                Token::Index(i) => {
+                    if let Some(arr) = value.as_array() {
+                        if let Some(v) = arr.get(*i) {
+                            next.push(v);
+                        }
+                    }
+                }
+            }
+        }
+
+        current = next;
     }
+
+    current
 }

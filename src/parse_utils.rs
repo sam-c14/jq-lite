@@ -35,20 +35,6 @@ pub fn get_file(file_path: &str) -> Result<String, Box<dyn Error>> {
     Ok(json)
 }
 
-pub fn parse_nested_json(query: &str) -> String {
-    let mut joint_query: String = parse_arrays(query);
-
-    if joint_query.contains(".") {
-        joint_query = joint_query.replace(".", "/");
-    }
-
-    if joint_query.starts_with("/") {
-        joint_query
-    } else {
-        String::from("/") + &joint_query
-    }
-}
-
 pub fn read_stdin() -> Result<String, io::Error> {
     let mut input: String = String::new();
 
@@ -60,25 +46,24 @@ pub fn read_stdin() -> Result<String, io::Error> {
 pub fn get_json_data(user_query: &str, file: String) -> Result<(), Box<dyn Error>> {
     let v: Value = serde_json::from_str(&file)?;
 
-    let tokens = tokenize(user_query);
+    let tokens = tokenize(user_query).map_err(|e| format!("Tokenization error: {}", e))?;
+
+    validate_tokens(&tokens).map_err(|e| format!("Validation error: {}", e))?;
+
     let results = execute_query(&tokens, &v);
 
-    println!("Results for query '{}':\n", user_query);
-
-    for result in results {
-        println!("{}", result);
+    if results.is_empty() {
+        println!("No results found for the query '{}'", user_query);
+    } else {
+        for result in results {
+            println!("Results for the query '{}': {}", user_query, result);
+        }
     }
 
     Ok(())
 }
 
-fn parse_arrays(query: &str) -> String {
-    let parsed: String = query.replace("[", "/").replace("]", "");
-
-    parsed
-}
-
-fn tokenize(query: &str) -> Vec<Token> {
+fn tokenize(query: &str) -> Result<Vec<Token>, String> {
     let mut tokens = Vec::new();
     let mut buffer = String::new();
     let mut chars = query.chars().peekable();
@@ -116,7 +101,13 @@ fn tokenize(query: &str) -> Vec<Token> {
                         number.push(c);
                     }
 
-                    let index = number.parse::<usize>().expect("Invalid array index");
+                    if !number.ends_with(']') {
+                        return Err("Unclosed '[' in query".into());
+                    }
+
+                    let index = number
+                        .parse::<usize>()
+                        .map_err(|_| format!("Invalid index: [{}]", number))?;
 
                     tokens.push(Token::Index(index));
                 }
@@ -133,7 +124,7 @@ fn tokenize(query: &str) -> Vec<Token> {
         tokens.push(Token::Field(buffer));
     }
 
-    tokens
+    Ok(tokens)
 }
 
 fn execute_query<'a>(tokens: &'a Vec<Token>, root: &'a Value) -> Vec<&'a Value> {
@@ -170,4 +161,28 @@ fn execute_query<'a>(tokens: &'a Vec<Token>, root: &'a Value) -> Vec<&'a Value> 
     }
 
     current
+}
+
+fn validate_tokens(tokens: &[Token]) -> Result<(), String> {
+    if tokens.is_empty() {
+        return Err("Empty query".into());
+    }
+
+    for (i, token) in tokens.iter().enumerate() {
+        match token {
+            Token::Field(name) => {
+                if name.is_empty() {
+                    return Err("Empty field name".into());
+                }
+            }
+
+            Token::Index(_) | Token::Wildcard => {
+                if i == 0 {
+                    return Err("Query cannot start with array access".into());
+                }
+            }
+        }
+    }
+
+    Ok(())
 }

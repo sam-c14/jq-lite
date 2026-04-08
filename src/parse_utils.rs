@@ -98,14 +98,17 @@ fn tokenize(query: &str) -> Result<Vec<Token>, String> {
                     // This is [index]
                     let mut number = String::new();
 
+                    let mut found_closing_bracket = false;
+
                     while let Some(c) = chars.next() {
                         if c == ']' {
+                            found_closing_bracket = true;
                             break;
                         }
                         number.push(c);
                     }
 
-                    if !number.ends_with(']') {
+                    if !found_closing_bracket {
                         eprintln!(
                             "{}",
                             format_error_message("Tokenization", "Unclosed '[' in query")

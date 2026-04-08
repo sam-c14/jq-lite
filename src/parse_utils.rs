@@ -48,7 +48,7 @@ pub fn get_json_data(user_query: &str, file: String) -> Result<(), Box<dyn Error
 
     let tokens = tokenize(user_query).map_err(|e| format!("Tokenization error: {}", e))?;
 
-    validate_tokens(&tokens).map_err(|e| format!("Validation error: {}", e))?;
+    validate_tokens(&tokens).unwrap();
 
     let results = execute_query(&tokens, &v);
 
@@ -61,6 +61,10 @@ pub fn get_json_data(user_query: &str, file: String) -> Result<(), Box<dyn Error
     }
 
     Ok(())
+}
+
+fn format_error_message(error_type: &str, message: &str) -> String {
+    format!("{error_type} Error: {message}")
 }
 
 fn tokenize(query: &str) -> Result<Vec<Token>, String> {
@@ -94,20 +98,33 @@ fn tokenize(query: &str) -> Result<Vec<Token>, String> {
                     // This is [index]
                     let mut number = String::new();
 
+                    let mut found_closing_bracket = false;
+
                     while let Some(c) = chars.next() {
                         if c == ']' {
+                            found_closing_bracket = true;
                             break;
                         }
                         number.push(c);
                     }
 
-                    if !number.ends_with(']') {
-                        return Err("Unclosed '[' in query".into());
+                    if !found_closing_bracket {
+                        eprintln!(
+                            "{}",
+                            format_error_message("Tokenization", "Unclosed '[' in query")
+                        );
+                        std::process::exit(2)
                     }
 
-                    let index = number
-                        .parse::<usize>()
-                        .map_err(|_| format!("Invalid index: [{}]", number))?;
+                    let index_mismatch_error = format!("Invalid array index: '{}'", number);
+
+                    let index = number.parse::<usize>().unwrap_or_else(|_| {
+                        eprintln!(
+                            "{}",
+                            format_error_message("Tokenization", &index_mismatch_error)
+                        );
+                        std::process::exit(2)
+                    });
 
                     tokens.push(Token::Index(index));
                 }
@@ -165,20 +182,26 @@ fn execute_query<'a>(tokens: &'a Vec<Token>, root: &'a Value) -> Vec<&'a Value> 
 
 fn validate_tokens(tokens: &[Token]) -> Result<(), String> {
     if tokens.is_empty() {
-        return Err("Empty query".into());
+        eprintln!("{}", format_error_message("Validation", "Empty query"));
+        std::process::exit(2);
     }
 
     for (i, token) in tokens.iter().enumerate() {
         match token {
             Token::Field(name) => {
                 if name.is_empty() {
-                    return Err("Empty field name".into());
+                    eprintln!("{}", format_error_message("Validation", "Empty field name"));
+                    std::process::exit(2);
                 }
             }
 
             Token::Index(_) | Token::Wildcard => {
                 if i == 0 {
-                    return Err("Query cannot start with array access".into());
+                    eprintln!(
+                        "{}",
+                        format_error_message("Validation", "Query cannot start with array access")
+                    );
+                    std::process::exit(2);
                 }
             }
         }

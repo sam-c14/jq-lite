@@ -103,11 +103,7 @@ user.name → /user/name
 8. **Validate query syntax before execution**
 
     Return meaningful errors for invalid queries
-
-## 🧭 Roadmap (GitHub Issues)
-
-## 🔵 Output & Formatting
-
+    
 9. **Add `--pretty` flag for formatted output**
 
     Pretty-print JSON results
@@ -119,6 +115,10 @@ user.name → /user/name
 11. **Add `--raw` flag**
 
     Print raw values without JSON quotes
+
+## 🧭 Roadmap (GitHub Issues)
+
+## 🔵 Output & Formatting
 
 ## 🔴 Error Handling
 

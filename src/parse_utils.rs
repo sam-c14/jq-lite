@@ -1,4 +1,4 @@
-use serde_json::Value;
+use serde_json::{Value, json};
 use std::error::Error;
 use std::fs;
 use std::io::{self, IsTerminal, Read};
@@ -48,9 +48,17 @@ pub fn read_stdin() -> Result<String, io::Error> {
 }
 
 pub fn get_json_data(user_query: &str, file: String, flag: &str) -> Result<(), Box<dyn Error>> {
-    let v: Value = serde_json::from_str(&file)?;
+    let mut v: Value = json!("{}");
 
-    println!("Flag {}\n", flag);
+    match serde_json::from_str(&file) {
+        Ok(json_file) => {
+            v = json_file;
+        }
+        Err(e) => {
+            println!("Invalid JSON error: {}", e);
+            std::process::exit(2);
+        }
+    }
 
     let tokens = tokenize(user_query).map_err(|e| format!("Tokenization error: {}", e))?;
 
@@ -60,6 +68,7 @@ pub fn get_json_data(user_query: &str, file: String, flag: &str) -> Result<(), B
 
     if results.is_empty() {
         println!("No results found for the query '{}'", user_query);
+        std::process::exit(1);
     } else {
         println!("Results for the query '{}':\n", user_query);
 

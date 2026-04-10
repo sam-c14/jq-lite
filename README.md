@@ -115,13 +115,7 @@ user.name → /user/name
 11. **Add `--raw` flag**
 
     Print raw values without JSON quotes
-
-## 🧭 Roadmap (GitHub Issues)
-
-## 🔵 Output & Formatting
-
-## 🔴 Error Handling
-
+    
 12. **Improve error handling and messaging**
 
     - File not found
@@ -133,6 +127,10 @@ user.name → /user/name
 
     - Fail when a query returns no result
     - Return non-zero exit code
+
+## 🧭 Roadmap (GitHub Issues)
+
+## 🔵 Output & Formatting
 
 ## ⚡ Performance & Architecture
 

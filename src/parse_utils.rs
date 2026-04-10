@@ -7,6 +7,10 @@ pub const USER_QUERY: usize = 1;
 
 pub const FILE_PATH: usize = 2;
 
+const PRETTY_FLAG: &str = "--pretty";
+
+const RAW_FLAG: &str = "--raw";
+
 const ONLY_DIRECTORY_PATH: usize = 1;
 
 const HAS_FILE_PATH_AND_QUERY: usize = 3;
@@ -43,8 +47,10 @@ pub fn read_stdin() -> Result<String, io::Error> {
     Ok(input)
 }
 
-pub fn get_json_data(user_query: &str, file: String) -> Result<(), Box<dyn Error>> {
+pub fn get_json_data(user_query: &str, file: String, flag: &str) -> Result<(), Box<dyn Error>> {
     let v: Value = serde_json::from_str(&file)?;
+
+    println!("Flag {}\n", flag);
 
     let tokens = tokenize(user_query).map_err(|e| format!("Tokenization error: {}", e))?;
 
@@ -55,8 +61,19 @@ pub fn get_json_data(user_query: &str, file: String) -> Result<(), Box<dyn Error
     if results.is_empty() {
         println!("No results found for the query '{}'", user_query);
     } else {
+        println!("Results for the query '{}':\n", user_query);
+
         for result in results {
-            println!("Results for the query '{}': {}", user_query, result);
+            if flag == PRETTY_FLAG {
+                println!("{}\n", serde_json::to_string_pretty(result)?);
+            } else if flag == RAW_FLAG {
+                match result {
+                    Value::String(s) => println!("{}\n", s),
+                    _ => println!("{}\n", result),
+                }
+            } else {
+                println!("{}\n", result);
+            }
         }
     }
 

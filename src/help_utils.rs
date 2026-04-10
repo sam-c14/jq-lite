@@ -29,5 +29,5 @@ pub fn print_help() {
 
 pub fn print_error(message: &str) {
     eprintln!("Error: {}", message);
-    println!("  Use command -h, --help to show help information");
+    println!("Use command -h, --help to show help information");
 }

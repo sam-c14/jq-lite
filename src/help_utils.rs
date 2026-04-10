@@ -20,6 +20,8 @@ pub fn print_help() {
     println!("  jq-lite \"user.name\" data.json");
     println!("  jq-lite \"name age user.email\" data.json");
     println!("  cat data.json | jq-lite \"name\"");
+    println!("  cat data.json | jq-lite \"users.address[]\"");
+    println!("  cat data.json | jq-lite \"users.address[].name\"");
     println!();
     println!("Notes:");
     println!("  - Supports top-level and nested queries using dot notation.");

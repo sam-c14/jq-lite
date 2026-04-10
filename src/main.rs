@@ -1,10 +1,10 @@
 pub mod help_utils;
 pub mod parse_utils;
 
-use help_utils::{print_help, print_error, HELP_COMMAND_LONG, HELP_COMMAND_SHORT};
+use help_utils::{HELP_COMMAND_LONG, HELP_COMMAND_SHORT, print_error, print_help};
 use parse_utils::{
-    FILE_PATH, USER_QUERY, get_file, get_json_data, has_only_json_query, is_missing_file_path,
-    is_missing_query, read_stdin,
+    FILE_PATH, USER_QUERY, get_file, get_json_data, has_only_json_query,
+    is_missing_file_path, is_missing_query, read_stdin,
 };
 use serde_json::Result as SerdeJsonResult;
 use std::env;
@@ -12,8 +12,22 @@ use std::env;
 fn main() {
     let args: Vec<String> = env::args().collect();
 
-    let h1= String::from(HELP_COMMAND_LONG);
+    let h1 = String::from(HELP_COMMAND_LONG);
     let h2 = String::from(HELP_COMMAND_SHORT);
+
+    let flags = ["--pretty", "--compact", "--raw"];
+
+    let mut flag = "";
+
+    for val in &args {
+        let current_val = val.as_str();
+        if flags.contains(&&current_val) && flag.len() == 0 {
+            flag = current_val;
+        } else if flags.contains(&&current_val) && flag.len() != 0 {
+            print_error("Can't use more than one flag");
+            std::process::exit(2);
+        }
+    }
 
     if args.len() > 1 && (args.contains(&h1) || args.contains(&h2)) {
         print_help();
@@ -27,10 +41,11 @@ fn main() {
 
     let user_query: &str = &args[USER_QUERY];
 
+    // Allow piping JSON data into the tool
     if has_only_json_query(&args) {
         let user_input = read_stdin().expect("Unexpected error reading user input");
 
-        parse_json_file("", user_query, &user_input).expect("Failed to parse JSON data");
+        parse_json_file("", user_query, &user_input, flag).expect("Failed to parse JSON data");
     } else {
         if is_missing_file_path(&args) {
             print_error("Missing File Path argument");
@@ -39,11 +54,16 @@ fn main() {
 
         let file_path: &str = &args[FILE_PATH];
 
-        parse_json_file(file_path, user_query, "").expect("Failed to parse JSON data");
+        parse_json_file(file_path, user_query, "", flag).expect("Failed to parse JSON data");
     }
 }
 
-fn parse_json_file(file_path: &str, user_query: &str, processed_file: &str) -> SerdeJsonResult<()> {
+fn parse_json_file(
+    file_path: &str,
+    user_query: &str,
+    processed_file: &str,
+    flag: &str,
+) -> SerdeJsonResult<()> {
     let mut file = String::new();
 
     if !processed_file.is_empty() {
@@ -61,7 +81,7 @@ fn parse_json_file(file_path: &str, user_query: &str, processed_file: &str) -> S
         }
     }
 
-    get_json_data(user_query, file).expect("Failed to get JSON data");
+    get_json_data(user_query, file, flag).expect("Failed to get JSON data");
 
     Ok(())
 }

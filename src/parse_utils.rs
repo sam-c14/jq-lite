@@ -55,19 +55,26 @@ pub fn get_json_data(user_query: &str, file: String, flag: &str) -> Result<(), B
             v = json_file;
         }
         Err(e) => {
-            println!("Invalid JSON error: {}", e);
+            eprintln!("Invalid JSON error: {}", e);
             std::process::exit(2);
         }
     }
 
-    let tokens = tokenize(user_query).map_err(|e| format!("Tokenization error: {}", e))?;
+    let tokens = tokenize(user_query).unwrap_or_else(|e| {
+        eprintln!("{}", e);
+        std::process::exit(2);
+    });
 
-    validate_tokens(&tokens).unwrap();
+    validate_tokens(&tokens).unwrap_or_else(|error| {
+        let error_message = format_error_message("Validation", &error.to_string());
+        eprintln!("{}", error_message);
+        std::process::exit(2);
+    });
 
     let results = execute_query(&tokens, &v);
 
     if results.is_empty() {
-        println!("No results found for the query '{}'", user_query);
+        eprintln!("No results found for the query '{}'", user_query);
         std::process::exit(1);
     } else {
         println!("Results for the query '{}':\n", user_query);
@@ -93,7 +100,7 @@ fn format_error_message(error_type: &str, message: &str) -> String {
     format!("{error_type} Error: {message}")
 }
 
-fn tokenize(query: &str) -> Result<Vec<Token>, String> {
+fn tokenize(query: &str) -> Result<Vec<Token>, Box<dyn Error>> {
     let mut tokens = Vec::new();
     let mut buffer = String::new();
     let mut chars = query.chars().peekable();
@@ -135,24 +142,19 @@ fn tokenize(query: &str) -> Result<Vec<Token>, String> {
                     }
 
                     if !found_closing_bracket {
-                        eprintln!(
-                            "{}",
-                            format_error_message("Tokenization", "Unclosed '[' in query")
-                        );
-                        std::process::exit(2)
+                        let error_message =
+                            format_error_message("Tokenization", "Unclosed '[' in query");
+
+                        return Err(error_message.into());
                     }
 
                     let index_mismatch_error = format!("Invalid array index: '{}'", number);
 
-                    let index = number.parse::<usize>().unwrap_or_else(|_| {
-                        eprintln!(
-                            "{}",
-                            format_error_message("Tokenization", &index_mismatch_error)
-                        );
-                        std::process::exit(2)
-                    });
+                    let index = number
+                        .parse::<usize>()
+                        .map_err(|_| format_error_message("Tokenization", &index_mismatch_error));
 
-                    tokens.push(Token::Index(index));
+                    tokens.push(Token::Index(index?));
                 }
             }
 
@@ -206,32 +208,105 @@ fn execute_query<'a>(tokens: &'a Vec<Token>, root: &'a Value) -> Vec<&'a Value> 
     current
 }
 
-fn validate_tokens(tokens: &[Token]) -> Result<(), String> {
+fn validate_tokens(tokens: &[Token]) -> Result<(), Box<dyn Error>> {
     if tokens.is_empty() {
-        eprintln!("{}", format_error_message("Validation", "Empty query"));
-        std::process::exit(2);
+        return Err("Empty query".into());
     }
 
     for (i, token) in tokens.iter().enumerate() {
         match token {
             Token::Field(name) => {
                 if name.is_empty() {
-                    eprintln!("{}", format_error_message("Validation", "Empty field name"));
-                    std::process::exit(2);
+                    return Err("Empty field name".into());
                 }
             }
 
             Token::Index(_) | Token::Wildcard => {
                 if i == 0 {
-                    eprintln!(
-                        "{}",
-                        format_error_message("Validation", "Query cannot start with array access")
-                    );
-                    std::process::exit(2);
+                    return Err("Query cannot start with array access".into());
                 }
             }
         }
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::parse_utils::{tokenize, validate_tokens, get_file};
+
+    const VALID_TOKEN: &str = "user.name";
+
+    const INVALID_TOKEN: &str = "user.name[";
+
+    const VALID_TOKEN_TTV: &str = "user.address[]";
+    
+    const INVALID_TOKEN_TTV: &str = "[].address[]";
+
+    const VALID_FILE_PATH: &str = "src/data.json";
+
+    const INVALID_FILE_PATH: &str = "data.json";
+
+    #[test]
+    fn test_tokenize() {
+        // Test Valid Token
+        let result = tokenize(VALID_TOKEN).unwrap();
+
+        assert_eq!(result.len() > 0, true);
+
+        // Test Invalid Token
+
+        match tokenize(INVALID_TOKEN) {
+            Ok(_val) => {}
+            Err(e) => {
+                assert_ne!(e.to_string(), "");
+            }
+        }
+    }
+
+    #[test]
+    fn test_token_validation() {
+        let valid_tokens = tokenize(VALID_TOKEN_TTV).unwrap();
+
+        // Test Valid Token Sequence
+
+        match validate_tokens(&valid_tokens) {
+            Ok(_val) => {}
+            Err(e) => {
+                assert_eq!(e.to_string(), "");
+            }
+        }
+
+        let invalid_tokens = tokenize(INVALID_TOKEN_TTV).unwrap();
+
+        // Test Invalid Token Sequence
+
+         match validate_tokens(&invalid_tokens) {
+            Ok(_val) => {}
+            Err(e) => {
+                assert_ne!(e.to_string(), "");
+            }
+        }
+    }
+
+    #[test]
+    fn test_get_file_util() {
+
+        match get_file(VALID_FILE_PATH) {
+            Ok(_json) => {
+               
+            },
+            Err(e) => {
+                 assert_eq!(e.to_string(), "");
+            }
+        } 
+        
+        match get_file(INVALID_FILE_PATH) {
+            Ok(_json) => {},
+            Err(e) => {
+                assert_ne!(e.to_string(), "");
+            }
+        }
+    }
 }

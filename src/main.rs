@@ -75,7 +75,7 @@ fn parse_json_file(
                 println!("File retrived")
             }
             Err(e) => {
-                println!("Error reading file: {}", e);
+                eprintln!("Error reading file: {}", e);
                 return Ok(());
             }
         }

@@ -56,12 +56,6 @@ user.name → /user/name
 
 ## ⚠️ Current Limitations
 
-- ❌ No array indexing (users[0])
-- ❌ No stdin support
-- ❌ No pretty printing
-- ❌ Basic error handling
-- ❌ No query validation
-- ❌ No support for pipes or filters
 - ❌ Not streaming (loads full JSON into memory)
 
 ## Recent Addons
@@ -145,15 +139,9 @@ user.name → /user/name
 
     Test full command execution
 
-## 🧭 Roadmap (GitHub Issues)
+## 💡 Future Enhancements (Stretch Goals)
 
-## ⚡ Performance & Architecture
-
-16. **Optimize memory usage in query parsing**
-
-    Avoid unnecessary allocations and cloning
-
-17. **Implement query AST (Abstract Syntax Tree)**
+16. **Implement query AST (Abstract Syntax Tree)**
 
     Example:
 
@@ -161,25 +149,23 @@ user.name → /user/name
     users[0].name → Field("users") → Index(0) → Field("name")
     ```
 
-18. **Add streaming JSON parsing**
+17. **Add streaming JSON parsing**
 
     Handle large JSON files without loading entire file into memory
 
-## 💡 Future Enhancements (Stretch Goals)
-
-19. **Support pipe operator (|)**
+18. **Support pipe operator (|)**
 
 ```bash
 jq-lite "users | name" data.json
 ```
 
-20. **Add simple filtering support**
+19. **Add simple filtering support**
 
 ```bash
 jq-lite "users[?age>18]" data.json
 ```
 
-21. **Add interactive REPL mode**
+20. **Add interactive REPL mode**
 
 ```bash
 jq-lite
